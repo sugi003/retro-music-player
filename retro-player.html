@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Retro Tamil Music Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Pixel style font -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #050509;
+      --panel: #111321;
+      --panel-inner: #181a2b;
+      --accent-blue: #00e6ff;
+      --accent-orange: #ff7a1a;
+      --accent-pink: #ff3b8d;
+      --text-dim: #7c8bb3;
+      --text-main: #e7efff;
+      --danger: #ff4d4d;
+      --border-glow: 0 0 10px rgba(0, 230, 255, 0.7);
+
+      /* background slideshow image */
+      --bg-image: none;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #10152b 0, #050509 55%, #000 100%);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* blurred, semi-transparent background image */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--bg-image) center/cover no-repeat fixed;
+      opacity: 0.18;           /* lower = more transparent */
+      filter: blur(3px);
+      z-index: -1;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 980px;
+      background: var(--panel);
+      border-radius: 18px;
+      padding: 24px;
+      border: 2px solid #ff7a1a;
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.85);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scanlines::before {
+      content: "";
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.04) 1px,
+        transparent 1px
+      );
+      background-size: 100% 3px;
+      opacity: 0.4;
+      mix-blend-mode: soft-light;
+    }
+
+    .title-bar {
+      border: 2px solid var(--accent-blue);
+      box-shadow: var(--border-glow);
+      border-radius: 14px;
+      padding: 14px 10px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .title-text {
+      font-family: "Press Start 2P", system-ui;
+      font-size: 18px;
+      letter-spacing: 3px;
+      color: var(--accent-pink);
+      text-shadow: 0 0 10px rgba(255, 59, 141, 0.8);
+      text-align: center;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: radial-gradient(circle at top, #232846 0, #101321 65%, #050509 100%);
+      border-radius: 14px;
+      padding: 16px;
+      border: 2px solid #ff7a1a;
+      box-shadow: 0 0 16px rgba(0, 0, 0, 0.85) inset;
+      position: relative;
+    }
+
+    .panel-inner {
+      background: var(--panel-inner);
+      border-radius: 10px;
+      padding: 14px;
+      border: 1px solid #252a40;
+    }
+
+    /* Cassette area */
+
+    .cassette {
+      background: #151827;
+      border-radius: 10px;
+      border: 2px solid #22263a;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .cassette-art {
+      background: linear-gradient(145deg, #ffb347, #ff7a1a);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow:
+        0 0 0 2px #000,
+        0 0 12px rgba(255, 122, 26, 0.8);
+      position: relative;
+    }
+
+    .cassette-window {
+      background: #2c3245;
+      border-radius: 6px;
+      height: 46px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .reel {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 3px solid #000;
+      position: absolute;
+      top: 50%;
+      margin-top: -11px;
+      background: radial-gradient(circle, #ffb347 0, #ff7a1a 55%, #000 60%, #000 100%);
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+    }
+
+    .reel.left { left: 22px; }
+    .reel.right { right: 22px; }
+
+    .tape {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      margin-top: -1.5px;
+      background: repeating-linear-gradient(
+        -45deg,
+        #111321 0,
+        #111321 2px,
+        #ffb347 2px,
+        #ffb347 4px
+      );
+      opacity: 0.8;
+    }
+
+    .cassette-holes {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    .hole {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #050509;
+      box-shadow: 0 0 0 2px #000;
+    }
+
+    .meta {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .meta-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+    }
+
+    .meta-title {
+      font-family: "Press Start 2P", system-ui;
+      font-size: 11px;
+      color: var(--accent-blue);
+      line-height: 1.5;
+    }
+
+    .meta-artist {
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    .meta-time {
+      font-size: 12px;
+      color: var(--accent-orange);
+      opacity: 0.9;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Progress bar */
+
+    .progress-wrapper { margin-bottom: 14px; }
+
+    .progress-bar {
+      position: relative;
+      height: 10px;
+      border-radius: 999px;
+      background: #131528;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid #232844;
+    }
+
+    .progress-fill {
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      background: linear-gradient(90deg, #ff7a1a, #ff3b8d);
+      box-shadow: 0 0 8px rgba(255, 122, 26, 0.8);
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-top: 4px;
+      color: var(--text-dim);
+    }
+
+    /* Controls */
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .controls-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 2px solid #1e2237;
+      background: radial-gradient(circle at top, #252a44 0, #090b12 90%);
+      border-radius: 10px;
+      min-width: 52px;
+      height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      font-family: "Press Start 2P", system-ui;
+      font-size: 11px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+      box-shadow:
+        0 0 10px rgba(0, 0, 0, 0.9),
+        inset 0 0 12px rgba(0, 0, 0, 0.85);
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, border-color 0.1s;
+    }
+
+    .btn:hover {
+      border-color: var(--accent-blue);
+      box-shadow:
+        0 0 14px rgba(0, 0, 0, 1),
+        0 0 14px rgba(0, 230, 255, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.9) inset;
+    }
+
+    .btn-primary {
+      background: radial-gradient(circle at top, #ff9a3c 0, #ff7a1a 45%, #8e3904 100%);
+      color: #000;
+      border-color: #ffb347;
+      box-shadow:
+        0 0 18px rgba(255, 122, 26, 0.8),
+        inset 0 0 10px rgba(0, 0, 0, 0.9);
+    }
+
+    .btn-primary:hover {
+      border-color: #ffe1ad;
+      box-shadow:
+        0 0 22px rgba(255, 122, 26, 1),
+        inset 0 0 12px rgba(0, 0, 0, 0.9);
+    }
+
+    .btn-square {
+      min-width: 40px;
+      height: 40px;
+      border-radius: 9px;
+      font-size: 13px;
+    }
+
+    /* Volume */
+
+    .volume-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 150px;
+      align-items: flex-end;
+    }
+
+    .volume-label {
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .volume-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .volume-icon {
+      width: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: var(--accent-blue);
+      cursor: pointer;
+    }
+
+    .slider {
+      -webkit-appearance: none;
+      width: 130px;
+      height: 6px;
+      border-radius: 999px;
+      background: #131528;
+      outline: none;
+      border: 1px solid #232844;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffb347 0, #ff7a1a 70%, #7a2f03 100%);
+      border: 2px solid #000;
+      box-shadow: 0 0 8px rgba(255, 122, 26, 0.9);
+      cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffb347 0, #ff7a1a 70%, #7a2f03 100%);
+      border: 2px solid #000;
+      box-shadow: 0 0 8px rgba(255, 122, 26, 0.9);
+      cursor: pointer;
+    }
+
+    /* Playlist panel */
+
+    .playlist-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+      font-family: "Press Start 2P", system-ui;
+    }
+
+    .playlist-list {
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .track {
+      padding: 8px 8px 9px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      transition: background 0.12s ease, border-color 0.12s ease, transform 0.05s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .track:hover {
+      background: rgba(0, 230, 255, 0.05);
+      border-color: rgba(0, 230, 255, 0.4);
+    }
+
+    .track:active { transform: translateY(1px); }
+
+    .track-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .track-title {
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    .track-artist {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .track-length {
+      font-size: 11px;
+      color: var(--accent-orange);
+    }
+
+    .track.active {
+      background: radial-gradient(circle at left, rgba(255, 122, 26, 0.25), rgba(14, 18, 38, 1));
+      border-color: #ff7a1a;
+      box-shadow:
+        0 0 16px rgba(255, 122, 26, 0.4),
+        inset 0 0 16px rgba(0, 0, 0, 0.9);
+    }
+
+    /* VU meter */
+
+    .vu-panel {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #2c3252;
+    }
+
+    .vu-header {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+      margin-bottom: 6px;
+      font-family: "Press Start 2P", system-ui;
+    }
+
+    .vu-bars {
+      display: flex;
+      gap: 4px;
+      align-items: flex-end;
+      height: 40px;
+    }
+
+    .vu-bar {
+      flex: 1;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(to top, #321004, #ff7a1a);
+      box-shadow: 0 0 8px rgba(255, 122, 26, 0.7);
+      transform-origin: bottom center;
+      transform: scaleY(0.2);
+      transition: transform 0.18s ease-out;
+    }
+
+    .status {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .status span.highlight { color: var(--accent-blue); }
+
+    /* small neon corner glow */
+    .glow-corner {
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 230, 255, 0.2), transparent 70%);
+      top: -40px;
+      right: -40px;
+      pointer-events: none;
+    }
+
+    /* Art gallery inside cassette */
+    .art-gallery {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .art-img {
+      width: 120px;
+      height: 80px;
+      border-radius: 6px;
+      object-fit: cover;
+      border: 2px solid #000;
+      box-shadow: 0 0 10px rgba(0,0,0,0.6), 0 0 8px rgba(255,122,26,0.16);
+      background: #111;
+    }
+
+    .gallery-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .gallery-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: linear-gradient(90deg,#252a44,#090b12);
+      border: 1px solid #22263a;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-blue);
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .gallery-dots {
+      display:flex;
+      gap:4px;
+      margin-top:4px;
+    }
+
+    .gallery-dot {
+      width:8px;
+      height:8px;
+      background:#22263a;
+      border-radius:50%;
+      box-shadow: 0 0 4px rgba(0,0,0,0.6);
+    }
+
+    .gallery-dot.active {
+      background: var(--accent-pink);
+      box-shadow: 0 0 8px rgba(255,59,141,0.6);
+    }
+
+    /* Animated radio icon in title bar */
+    .radio-anim {
+      width: 60px;
+      height: 34px;
+      border-radius: 10px;
+      background: radial-gradient(circle at top, #252a44 0, #090b12 90%);
+      border: 2px solid #1e2237;
+      box-shadow:
+        0 0 8px rgba(0,0,0,0.9),
+        inset 0 0 8px rgba(0,0,0,0.8);
+      position: relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+
+    .radio-antenna {
+      position:absolute;
+      top:-12px;
+      left:10px;
+      width:2px;
+      height:14px;
+      background:#ccc;
+    }
+
+    .radio-antenna::after {
+      content:"";
+      position:absolute;
+      top:-4px;
+      left:-3px;
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:#ffb347;
+      box-shadow:0 0 8px rgba(255,180,71,0.8);
+    }
+
+    .radio-wave {
+      width:4px;
+      height:16px;
+      margin:0 2px;
+      border-radius:999px;
+      background:linear-gradient(to top,#321004,#ff7a1a);
+      animation:wave 0.9s ease-in-out infinite;
+    }
+
+    .radio-wave:nth-child(2) { animation-delay:0.1s; }
+    .radio-wave:nth-child(3) { animation-delay:0.2s; }
+
+    @keyframes wave {
+      0%, 100% { transform:scaleY(0.4); }
+      50% { transform:scaleY(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app scanlines">
+    <div class="glow-corner"></div>
+
+    <div class="title-bar">
+      <div class="radio-anim">
+        <div class="radio-antenna"></div>
+        <div class="radio-wave"></div>
+        <div class="radio-wave"></div>
+        <div class="radio-wave"></div>
+      </div>
+      <div class="title-text">RETRO TAMIL PLAYER</div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT: Cassette + Controls -->
+      <div class="panel">
+        <div class="panel-inner">
+          <div class="cassette">
+            <div class="cassette-art">
+              <div style="height: 10px; background:#ff9447; border-radius:4px;"></div>
+              <div class="cassette-window">
+                <div class="tape"></div>
+                <div class="reel left" id="reel-left"></div>
+                <div class="reel right" id="reel-right"></div>
+              </div>
+              <div class="cassette-holes">
+                <div class="hole"></div>
+                <div class="hole"></div>
+                <div class="hole"></div>
+                <div class="hole"></div>
+                <div class="hole"></div>
+              </div>
+              <!-- Art gallery -->
+              <div class="art-gallery" id="art-gallery">
+                <img id="art-image" class="art-img" src="https://picsum.photos/seed/retro1/400/300" alt="art" />
+                <div class="gallery-controls">
+                  <div class="gallery-btn" id="gallery-prev">◀</div>
+                  <div class="gallery-btn" id="gallery-next">▶</div>
+                  <div class="gallery-dots" id="gallery-dots"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="meta">
+              <div class="meta-label">Now Playing</div>
+              <div class="meta-title" id="meta-title">--</div>
+              <div class="meta-row">
+                <div class="meta-artist" id="meta-artist">Select a song</div>
+                <div class="meta-time">
+                  <span id="meta-current">00:00</span> / <span id="meta-duration">00:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="progress-wrapper">
+            <div class="progress-bar" id="progress-bar">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="time-row">
+              <span id="time-current">00:00</span>
+              <span id="time-remaining">-00:00</span>
+            </div>
+          </div>
+
+          <div class="controls-row">
+            <div class="controls-main">
+              <button class="btn btn-square" id="prev-btn">&#9664;</button>
+              <button class="btn btn-primary" id="play-btn">PLAY</button>
+              <button class="btn btn-square" id="next-btn">&#9654;</button>
+            </div>
+
+            <div class="volume-block">
+              <div class="volume-label">Volume</div>
+              <div class="volume-row">
+                <div class="volume-icon" id="mute-btn">&#128266;</div>
+                <input type="range" min="0" max="1" step="0.01" value="0.8" class="slider" id="volume-slider" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Playlist + VU meter -->
+      <div class="panel">
+        <div class="panel-inner">
+          <div class="playlist-header">
+            <span>PLAYLIST</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label for="lang-select" style="font-size:10px; color:var(--text-dim);">Language</label>
+              <select id="lang-select" style="background:#0d1120; color:var(--text-main); border:1px solid #22263a; padding:6px; border-radius:6px; font-size:12px;">
+                <option value="all">All</option>
+                <option value="ta" selected>Tamil</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="playlist-list" id="playlist">
+            <!-- Tracks will be injected by JS -->
+          </div>
+
+          <div class="vu-panel">
+            <div class="vu-header">VU METER</div>
+            <div class="vu-bars">
+              <div class="vu-bar" data-idx="0"></div>
+              <div class="vu-bar" data-idx="1"></div>
+              <div class="vu-bar" data-idx="2"></div>
+              <div class="vu-bar" data-idx="3"></div>
+            </div>
+            <div class="status">
+              <span id="status-text">Paused</span>
+              <span class="highlight" id="status-track">No track</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === Playlist data (put your Tamil MP3 files in /audio/) ===
+    const tracks = [
+  {
+    title: "Azhage Azhage",
+    artist: "Harris Jayaraj – Oru Kal Oru Kannadi",
+    file: "audio/azhage-azhage.mp3",
+    length: "00:00",
+    lang: "ta",
+  },
+  {
+    title: "Uyirin Uyire",
+    artist: "Harris Jayaraj – Kaakha Kaakha",
+    file: "audio/uyirin-uyire.mp3",
+    length: "00:00",
+    lang: "ta",
+  },
+  {
+    title: "Manjal Veyil",
+    artist: "Harris Jayaraj – Vettaiyaadu Vilaiyaadu",
+    file: "audio/manjal-veyil.mp3",
+    length: "00:00",
+    lang: "ta",
+  },
+  {
+    title: "June Ponal",
+    artist: "Krish, Arun – Unnale Unnale",
+    file: "audio/june-ponal.mp3",
+    length: "00:00",
+    lang: "ta",
+  },
+  {
+    title: "Why This Kolaveri Di",
+    artist: "Dhanush, Anirudh – 3",
+    file: "audio/why-this-kolaveri-di.mp3",
+    length: "00:00",
+    lang: "ta",
+  },
+  {
+    title: "Hunter Vantaar",
+    artist: "Anirudh – Vettaiyan",
+    file: "audio/hunter-vantaar.mp3",
+    length: "00:00",
+    lang: "ta",
+  },
+];
+
+
+
+    // === DOM references ===
+    const playlistEl = document.getElementById("playlist");
+    const metaTitleEl = document.getElementById("meta-title");
+    const metaArtistEl = document.getElementById("meta-artist");
+    const metaCurrentEl = document.getElementById("meta-current");
+    const metaDurationEl = document.getElementById("meta-duration");
+    const timeCurrentEl = document.getElementById("time-current");
+    const timeRemainingEl = document.getElementById("time-remaining");
+    const playBtn = document.getElementById("play-btn");
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const progressBar = document.getElementById("progress-bar");
+    const progressFill = document.getElementById("progress-fill");
+    const volumeSlider = document.getElementById("volume-slider");
+    const muteBtn = document.getElementById("mute-btn");
+    const vuBars = document.querySelectorAll(".vu-bar");
+    const statusText = document.getElementById("status-text");
+    const statusTrack = document.getElementById("status-track");
+    const reelLeft = document.getElementById("reel-left");
+    const reelRight = document.getElementById("reel-right");
+
+    const langSelect = document.getElementById("lang-select");
+    const artImage = document.getElementById("art-image");
+    const galleryPrev = document.getElementById("gallery-prev");
+    const galleryNext = document.getElementById("gallery-next");
+    const galleryDots = document.getElementById("gallery-dots");
+
+    let currentIndex = 0;
+    let isPlaying = false;
+    let wasMuted = false;
+
+    const audio = new Audio();
+    audio.preload = "metadata";
+
+    // Helpers
+    function formatTime(seconds) {
+      if (isNaN(seconds)) return "00:00";
+      const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+      const s = Math.floor(seconds % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function setCassetteSpin(active) {
+      const speed = active ? "spin 1.4s linear infinite" : "none";
+      reelLeft.style.animation = speed;
+      reelRight.style.animation = speed;
+    }
+
+    // Add keyframes for spin
+    (function addSpinAnimation() {
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `;
+      document.head.appendChild(style);
+    })();
+
+    function updateVU(active) {
+      if (!active) {
+        vuBars.forEach(bar => {
+          bar.style.transform = "scaleY(0.1)";
+        });
+        return;
+      }
+      vuBars.forEach(bar => {
+        const level = 0.3 + Math.random() * 0.7;
+        bar.style.transform = `scaleY(${level})`;
+      });
+    }
+
+    // --- Gallery images ---
+    const galleryImages = [
+      "images/sample1.jpg",
+      "images/sample2.jpg"
+    ];
+    let galleryIndex = 0;
+    let galleryTimer = null;
+
+    function showImage(idx) {
+      galleryIndex = (idx + galleryImages.length) % galleryImages.length;
+      const url = galleryImages[galleryIndex];
+
+      // cassette art image
+      artImage.src = url;
+
+      // update page background
+      document.documentElement.style.setProperty("--bg-image", `url('${url}')`);
+
+      // update dots
+      Array.from(galleryDots.children).forEach((d, i) =>
+        d.classList.toggle("active", i === galleryIndex)
+      );
+    }
+
+    function nextImage() { showImage(galleryIndex + 1); }
+    function prevImage() { showImage(galleryIndex - 1); }
+
+    function createGalleryDots() {
+      galleryDots.innerHTML = "";
+      galleryImages.forEach((img, i) => {
+        const d = document.createElement("div");
+        d.className = "gallery-dot" + (i === galleryIndex ? " active" : "");
+        d.addEventListener("click", () => {
+          showImage(i);
+          startGalleryAutoRotate();
+        });
+        galleryDots.appendChild(d);
+      });
+    }
+
+    function startGalleryAutoRotate() {
+      if (galleryTimer) clearInterval(galleryTimer);
+      galleryTimer = setInterval(() => { nextImage(); }, 5000);
+    }
+
+    galleryPrev.addEventListener("click", () => { prevImage(); startGalleryAutoRotate(); });
+    galleryNext.addEventListener("click", () => { nextImage(); startGalleryAutoRotate(); });
+
+    // Playlist rendering with language filter
+    function renderPlaylist() {
+      const sel = (langSelect && langSelect.value) || "all";
+      const mapped = tracks.map((t, i) => Object.assign({}, t, { origIndex: i }));
+      const filtered = mapped.filter(t => sel === "all" ? true : (t.lang === sel));
+
+      playlistEl.innerHTML = "";
+      filtered.forEach(t => {
+        const item = document.createElement("div");
+        item.className = "track";
+        item.dataset.orig = t.origIndex;
+
+        item.innerHTML = `
+          <div class="track-info">
+            <div class="track-title">${t.title}</div>
+            <div class="track-artist">${t.artist}</div>
+          </div>
+          <div class="track-length">${t.length}</div>
+        `;
+
+        item.addEventListener("click", () => {
+          const realIndex = Number(item.dataset.orig);
+          if (realIndex === currentIndex) {
+            togglePlay();
+          } else {
+            loadTrack(realIndex);
+            playAudio();
+          }
+        });
+
+        playlistEl.appendChild(item);
+      });
+
+      highlightActiveTrack();
+    }
+
+    function highlightActiveTrack() {
+      document.querySelectorAll(".track").forEach(el => {
+        const orig = Number(el.dataset.orig);
+        el.classList.toggle("active", orig === currentIndex);
+      });
+      const current = tracks[currentIndex];
+      statusTrack.textContent = current ? current.title : "No track";
+    }
+
+    function loadTrack(index) {
+      currentIndex = (index + tracks.length) % tracks.length;
+      const track = tracks[currentIndex];
+      audio.src = track.file;
+      metaTitleEl.textContent = track.title;
+      metaArtistEl.textContent = track.artist;
+      progressFill.style.width = "0%";
+      metaCurrentEl.textContent = "00:00";
+      metaDurationEl.textContent = track.length || "00:00";
+      timeCurrentEl.textContent = "00:00";
+      timeRemainingEl.textContent = "-00:00";
+      highlightActiveTrack();
+      statusText.textContent = "Ready";
+    }
+
+    function playAudio() {
+      audio
+        .play()
+        .then(() => {
+          isPlaying = true;
+          playBtn.textContent = "PAUSE";
+          statusText.textContent = "Playing";
+          setCassetteSpin(true);
+        })
+        .catch(err => {
+          console.error(err);
+          statusText.textContent = "Error loading audio";
+        });
+    }
+
+    function pauseAudio() {
+      audio.pause();
+      isPlaying = false;
+      playBtn.textContent = "PLAY";
+      statusText.textContent = "Paused";
+      setCassetteSpin(false);
+      updateVU(false);
+    }
+
+    function togglePlay() {
+      if (!tracks.length) return;
+      if (!audio.src) {
+        loadTrack(currentIndex);
+      }
+      if (audio.paused) {
+        playAudio();
+      } else {
+        pauseAudio();
+      }
+    }
+
+    function nextTrack() {
+      loadTrack(currentIndex + 1);
+      if (isPlaying) playAudio();
+    }
+
+    function prevTrack() {
+      loadTrack(currentIndex - 1);
+      if (isPlaying) playAudio();
+    }
+
+    // Events
+    playBtn.addEventListener("click", togglePlay);
+    prevBtn.addEventListener("click", prevTrack);
+    nextBtn.addEventListener("click", nextTrack);
+
+    volumeSlider.addEventListener("input", () => {
+      audio.volume = volumeSlider.value;
+      muteBtn.textContent = audio.volume === 0 ? "🔇" : "🔊";
+    });
+
+    muteBtn.addEventListener("click", () => {
+      if (audio.volume > 0) {
+        wasMuted = audio.volume;
+        audio.volume = 0;
+        volumeSlider.value = 0;
+        muteBtn.textContent = "🔇";
+      } else {
+        audio.volume = wasMuted || 0.8;
+        volumeSlider.value = audio.volume;
+        muteBtn.textContent = "🔊";
+      }
+    });
+
+    progressBar.addEventListener("click", e => {
+      const rect = progressBar.getBoundingClientRect();
+      const pct = (e.clientX - rect.left) / rect.width;
+      if (!isNaN(audio.duration)) {
+        audio.currentTime = Math.max(0, Math.min(audio.duration, pct * audio.duration));
+      }
+    });
+
+    audio.addEventListener("timeupdate", () => {
+      if (!isNaN(audio.duration)) {
+        const pct = (audio.currentTime / audio.duration) * 100;
+        progressFill.style.width = `${pct}%`;
+        metaCurrentEl.textContent = formatTime(audio.currentTime);
+        metaDurationEl.textContent = formatTime(audio.duration);
+        timeCurrentEl.textContent = formatTime(audio.currentTime);
+        timeRemainingEl.textContent = "-" + formatTime(audio.duration - audio.currentTime);
+      }
+      if (isPlaying) updateVU(true);
+    });
+
+    audio.addEventListener("ended", () => {
+      updateVU(false);
+      setCassetteSpin(false);
+      nextTrack();
+    });
+
+    audio.addEventListener("loadedmetadata", () => {
+      metaDurationEl.textContent = formatTime(audio.duration);
+      timeRemainingEl.textContent = "-" + formatTime(audio.duration);
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", e => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === "ArrowRight") {
+        audio.currentTime = Math.min(audio.currentTime + 5, audio.duration || audio.currentTime);
+      } else if (e.key === "ArrowLeft") {
+        audio.currentTime = Math.max(audio.currentTime - 5, 0);
+      } else if (e.key === "ArrowUp") {
+        audio.volume = Math.min(1, audio.volume + 0.05);
+        volumeSlider.value = audio.volume;
+      } else if (e.key === "ArrowDown") {
+        audio.volume = Math.max(0, audio.volume - 0.05);
+        volumeSlider.value = audio.volume;
+      }
+    });
+
+    // Init
+    renderPlaylist();
+
+    (function initFirstTrack() {
+      const sel = (langSelect && langSelect.value) || "all";
+      if (sel === "all") {
+        if (tracks.length) loadTrack(0);
+      } else {
+        const idx = tracks.findIndex(t => t.lang === sel);
+        if (idx >= 0) loadTrack(idx);
+        else if (tracks.length) loadTrack(0);
+      }
+    })();
+
+    // Gallery init
+    createGalleryDots();
+    showImage(0);
+    startGalleryAutoRotate();
+
+    if (langSelect) {
+      langSelect.addEventListener("change", () => {
+        renderPlaylist();
+      });
+    }
+  </script>
+</body>
+</html>
